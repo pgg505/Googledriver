@@ -1,30 +1,28 @@
 #!/usr/bin/ruby
 
-'''Remember that all files will be created in same directory as Ruby file.'''
+def where_is_package(package_name)
+  '''(String) -> String. Returns the location of a given package. Returns "package_name:" if package is not installed.'''
 
-def whereIsPackage(packageName)
-  '''(String) -> String. Returns the location of a given package. Returns "packageName:" if package is not installed.'''
-
-  system( "whereis " + packageName + "> 'packageLocation.txt'" ) # system() executes Bash command and returns boolean
+  system( "whereis " + package_name + "> 'packageLocation.txt'" ) # system() executes Bash command and returns boolean
   f = File.new("packageLocation.txt", "r")
   location = File.read(f)
   return location
 end
 
-def doesPackageExist(packageName)
-  '''(String) -> Boolean. Returns true if package is installed and false if not.'''
+def does_package_exist(package_name)
+  '''(String) -> Boolean. Returns true if package is installed else returns false.'''
 
-  if whereIsPackage(packageName) == packageName + ":\n"
+  if where_is_package(package_name) == package_name + ":\n"
     return false
   else
     return true
   end
 end
 
-def installTree()
+def install_tree()
   '''() -> Void. Installs Tree if it is not already on the system else does nothing.'''
 
-  if doesPackageExist("tree") == false
+  if does_package_exist("tree") == false
     begin
       system( "sudo apt-get install tree" ) # assumes that this command for installing Tree will not change
     rescue
@@ -33,19 +31,19 @@ def installTree()
   end
 end
 
-def getTreeStructure()
-  '''() -> Void. Uses working directory as root to create tree strucutre of directory.'''
+def get_tree_structure()
+  '''() -> Void. Uses working directory as root and creates tree strucutre of directory.'''
 
   begin
     system( "tree -a > diretoryStructure.txt" )
   rescue
-    puts "Given directory is invalid. Please try again with a valid directory."
+    puts "The file directoryStructure.txt could not be created. Please create the file manually and rerun program."
   end
 end
 
 def init()
-  installTree()
-  getTreeStructure()
+  install_tree()
+  get_tree_structure()
 end
 
 init()
