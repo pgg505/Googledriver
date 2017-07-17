@@ -39,7 +39,7 @@ class Authoriser
     credentials
   end
 
-  def get_access_token()
+  def get_access_token() # token lasts an hour before it needs to be manually reset
     '''() -> String. Returns the access token generated during the authentication process.'''
 
     temp_string = File.read(@CREDENTIALS_PATH).split('access_token":"')[1]
