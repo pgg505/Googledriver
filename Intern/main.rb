@@ -3,12 +3,9 @@
 require "./uploader.rb"
 
 uploader = Uploader.new()
-
-file_id = uploader.upload_file("test.pdf", "alk")
-p meta = uploader.get_file_metadata(file_id)
-#p update = uploader.update_file_metadata(file_id, "name", "Plan")
-
-#update = uploader.update_file_metadata(file_id, "parents", "0B9FK_ZzXJlazYlpYdExRU3lGSGM")
-#updates = uploader.update_file_permission(file_id, "pgg505@york.ac.uk", "writer")
-
-#p fold_id = uploader.upload_folder()
+fold1 = uploader.upload_folder("First", hex_colour: "#00FF00")
+fold2 = uploader.upload_folder("Second", hex_colour: "#00FF00")
+update1 = uploader.update_file_permission(fold1, "pgg505@york.ac.uk")
+update2 = uploader.update_file_permission(fold2, "pgiordano97@gmail.com")
+file1 = uploader.upload_file("test.pdf", "A", fold1)
+file2 = uploader.upload_file("flower.jpeg", "B", fold2)
