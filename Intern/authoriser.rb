@@ -4,6 +4,8 @@ require "googleauth/stores/file_token_store"
 require "fileutils"
 
 class Authoriser
+  '''Authorises a Google Drive account.'''
+
   def initialize()
     @OOB_URI = "urn:ietf:wg:oauth:2.0:oob"
     @APPLICATION_NAME = "Google Drive"
