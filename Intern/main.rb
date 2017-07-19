@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 
-require "./uploader.rb"
 require "./analyser.rb"
 
 # uploader = Uploader.new()
@@ -9,5 +8,7 @@ require "./analyser.rb"
 # change = uploader.update_file_permission(fold1, "pgg505@york.ac.uk")
 # file1 = uploader.upload_file("test.pdf", "A", fold2)
 # file2 = uploader.upload_file("flower.jpeg", "B", fold1)
+# text = uploader.upload_file("store.rb", "Test")
 
 analyser = Analyser.new()
+analyser.temp()
