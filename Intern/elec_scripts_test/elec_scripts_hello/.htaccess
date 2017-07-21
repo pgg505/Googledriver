@@ -1,0 +1,11 @@
+AuthType Basic
+AuthName "Ugrad"
+AuthUserFile /etc/apache2/auth/all.users
+AuthGroupFile /etc/apache2/auth/group.dat
+
+Require group aelecadmn
+Allow from york.ac.uk
+
+Order deny,allow
+
+Satisfy all
