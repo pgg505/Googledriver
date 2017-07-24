@@ -14,8 +14,7 @@ class Uploader # uploads files and folders to an authorised Google Drive account
     @drive_uploader = RestClient::Resource.new("https://www.googleapis.com/upload/drive/v3/files",
                                                :headers => {"Authorization" => "Bearer #{@access_token}"})
     @file_analyser = FileMagic.new(FileMagic::MAGIC_MIME)
-    @file_counter = 0
-    @folder_counter = 0
+    @folder_ids_hash = {}
   end
 
   def upload_filesystem(upload_dest: "root", current_dir: "") # recursively uploads a filesystem
@@ -24,18 +23,14 @@ class Uploader # uploads files and folders to an authorised Google Drive account
         file_name = object.split("/")[-1]
         p file_name
         file_id = upload_file(object, file_name, location: upload_dest)
-        @file_counter += 1
       else
         folder_name = object.split("/")[-1]
         p folder_name
         folder_id = upload_folder(folder_name, location: upload_dest)
-        @folder_counter += 1
+        @folder_ids_hash[object] = folder_id
         upload_filesystem(upload_dest: folder_id, current_dir: current_dir + folder_name + "/")
       end
     end
-    puts "Uploaded " + @file_counter.to_s + " files and " + @folder_counter.to_s + " folders."
-    @file_counter = 0
-    @folder_counter = 0
   end
 
   def upload_folder(folder_name, hex_colour: "#A2FF33", location: "root") # uploads a folder with optional colour
