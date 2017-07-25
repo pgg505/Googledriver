@@ -1,0 +1,10 @@
+# List of groups in htaccess files and their corresponding email address.
+CORESTAFF=>elec-staff-l@york.ac.uk
+ACADEMICSTAFF=>elec-academics-l@york.ac.uk
+aelecadmn=>elec-admin-l@york.ac.uk
+dmt=>elec-dmt-l@york.ac.uk
+BOS=>elec-bos-l@york.ac.uk
+research=>elec-research-l@york.ac.uk
+RSSC_STAFF=>elec-rssc-l@york.ac.uk
+GSB_STAFF=>elec-gsc-l@york.ac.uk
+
