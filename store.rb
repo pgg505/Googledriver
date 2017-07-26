@@ -1,3 +1,22 @@
+def update_file_permission(file_id, email) # shares a given file or folder with a single email address
+  if refresh?
+    refresh_token
+  end
+
+  payload = {"role" => "writer",
+             "type" => "group",
+             "emailAddress" => email}.to_json
+
+  begin
+    update = @drive_manager[file_id + "/permissions"].post(
+      payload)
+  rescue => error
+    p error
+  end
+
+  return update
+end
+
 class Mandator
   def initialize # initialises hashes
     @groups_to_email = {}
