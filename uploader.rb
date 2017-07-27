@@ -4,12 +4,21 @@ require "./authorizer.rb"
 
 class Uploader
   def initialize
-    @REFRESH_COOLDOWN = 3000 # time in seconds before access token is refreshed
-    @file_ids = {} # file to ID hash
-    @folder_ids = {} # folder to ID hash
+    @TOKEN_LIFETIME = 3600 # time in seconds before access token is made void
+    @file_ids = {} # hash of files to ids
+    @folder_ids = {} # hash of folders to ids
     @authorizer = Authorizer.new
-    @authorizer.authorize # prompts user to authorize their account if need be
-    refresh_token
+    @access_token = @authorizer.access_token
+    @refresh_token = @authorizer.refresh_token
+    update_rest_clients
+  end
+
+  def update_rest_clients
+    @drive_manager = RestClient::Resource.new("https://www.googleapis.com/drive/v3/files/",
+                                              :headers => {"Authorization" => "Bearer #{@access_token}",
+                                                           "Content-Type" => "application/json"})
+    @drive_uploader = RestClient::Resource.new("https://www.googleapis.com/upload/drive/v3/files",
+                                               :headers => {"Authorization" => "Bearer #{@access_token}"})
   end
 
   def upload_filesystem(upload_dest: "root", current_dir: "") # recursively uploads a filesystem
@@ -44,6 +53,10 @@ class Uploader
     folder_id = JSON.parse(upload)["id"]
 
     if location != "root" # does not need to change parents if intended location is root
+      if refresh?
+        refresh_token
+      end
+
       begin
         move = @drive_manager[folder_id + "?addParents=" + location + "&removeParents=root&alt=json"].patch(
           {"uploadType" => "resumable"}.to_json)
@@ -66,6 +79,10 @@ class Uploader
       puts "upload_file error 1"
     end
 
+    if refresh?
+      refresh_token
+    end
+
     begin
       upload = @drive_uploader.post(
         payload)
@@ -74,6 +91,10 @@ class Uploader
     end
 
     file_id = JSON.parse(upload)["id"]
+
+    if refresh?
+      refresh_token
+    end
 
     begin
       rename = @drive_manager[file_id + "?addParents=" + location + "&removeParents=root&alt=json"].patch( # changes file name and puts in folder
@@ -86,26 +107,18 @@ class Uploader
     return file_id
   end
 
-  def set_rest_clients
-    @drive_manager = RestClient::Resource.new("https://www.googleapis.com/drive/v3/files/",
-                                              :headers => {"Authorization" => "Bearer #{@access_token}",
-                                                           "Content-Type" => "application/json"})
-    @drive_uploader = RestClient::Resource.new("https://www.googleapis.com/upload/drive/v3/files",
-                                               :headers => {"Authorization" => "Bearer #{@access_token}"})
-  end
-
-  def get_file_ids
+  def file_ids
     return @file_ids
   end
 
-  def get_folder_ids
+  def folder_ids
     return @folders_ids
   end
 
   def refresh?
-    token_timer = Time.now - @token_tob
+    token_timer = Time.now - @authorizer.token_tob
 
-    if token_timer > @REFRESH_COOLDOWN
+    if token_timer > (@TOKEN_LIFETIME - 600)
       return true
     else
       return false
@@ -113,9 +126,8 @@ class Uploader
   end
 
   def refresh_token
-    @token_tob = Time.now
-    @authorizer.set_access_token
-    p @access_token = @authorizer.get_access_token
-    set_rest_clients
+    @authorizer.generate_access_token
+    @access_token = @authorizer.access_token
+    p update_rest_clients
   end
 end
