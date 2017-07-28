@@ -1,15 +1,15 @@
-require "./authorizer.rb"
 require "rest-client"
 require "json"
+require "./authorizer2.rb"
 
 class Uploader
   def initialize
     @TOKEN_LIFETIME = 3600 # time in seconds before access token is made void
     @file_ids = {} # hash of files to ids
     @folder_ids = {} # hash of folders to ids
-    @failed_uploads = []
     @authorizer = Authorizer.new
     @access_token = @authorizer.access_token
+    @refresh_token = @authorizer.refresh_token
     update_rest_clients
   end
 
@@ -46,8 +46,8 @@ class Uploader
         {"name" => folder_name,
          "mimeType" => "application/vnd.google-apps.folder",
          "folderColorRgb" => hex_colour}.to_json)
-    rescue => error
-      p error
+    rescue Exception
+      puts "upload_folder error 1"
     end
 
     folder_id = JSON.parse(upload)["id"]
@@ -60,8 +60,8 @@ class Uploader
       begin
         move = @drive_manager[folder_id + "?addParents=" + location + "&removeParents=root&alt=json"].patch(
           {"uploadType" => "resumable"}.to_json)
-      rescue => error
-        p error
+      rescue Exception
+        puts "upload_folder error 2"
       end
     end
 
@@ -75,9 +75,8 @@ class Uploader
 
     begin
       payload = File.open(file_path)
-    rescue
-      @failed_uploads.push(file_path)
-      return
+    rescue Exception
+      puts "upload_file error 1"
     end
 
     if refresh?
@@ -87,8 +86,8 @@ class Uploader
     begin
       upload = @drive_uploader.post(
         payload)
-    rescue
-      @failed_uploads.push(file_path)
+    rescue Exception
+      puts "upload_file error 2"
     end
 
     file_id = JSON.parse(upload)["id"]
@@ -101,8 +100,8 @@ class Uploader
       rename = @drive_manager[file_id + "?addParents=" + location + "&removeParents=root&alt=json"].patch( # changes file name and puts in folder
         {"uploadType" => "resumable",
          "name" => file_name}.to_json)
-    rescue => error
-      p error
+    rescue Exception
+      puts "upload_folder error 3"
     end
 
     return file_id
@@ -114,10 +113,6 @@ class Uploader
 
   def folder_ids
     return @folders_ids
-  end
-
-  def failed_uploads
-    return @failed_uploads
   end
 
   def refresh?
