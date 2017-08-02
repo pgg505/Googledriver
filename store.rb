@@ -1,3 +1,48 @@
+def obtain_hrefs
+  temp_string = @doc.css('ul.menu.nav').css('a')
+  hrefs = temp_string
+  hrefs
+end
+
+def process_links(hrefs, links)
+  processed_links = []
+  index = 0
+
+  links.each do |link|
+    link_data = [] # contains metadata and link text for each link on page
+    link_data.push(link.to_s.split('class="')[1].split('"')[0])
+    link_data.push(hrefs[index].to_s.split('href="')[1].split('"')[0])
+    link_data.push(hrefs[index].text)
+    processed_links.push(link_data)
+    index += 1
+  end
+
+  processed_links
+end
+
+def finalise_links(processed_links)
+  finalised_links = []
+
+  processed_links.each do |processed_link|
+    link_data = []
+    active = false
+    level = processed_link[0].to_s.split('level-')[1]
+
+    if level.include?('active')
+      active = true
+      level = level.chomp(' active')
+    end
+
+    link_data.push(level)
+    link_data.push(active)
+    link_data.push(processed_link[1])
+    link_data.push(processed_link[2])
+    finalised_links.push(link_data)
+  end
+
+  finalised_links
+end
+
 def update_file_permission(file_id, email) # shares a given file or folder with a single email address
   if refresh?
     refresh_token
@@ -88,8 +133,6 @@ def get_file_metadata(file_id)
   metadata = JSON.parse(metadata)
   return metadata
 end
-
-
 
 def get_file_permissionid(file_id)
   '''(String) -> String. Returns the permission ID of a given file.'''
