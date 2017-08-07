@@ -1,8 +1,8 @@
-require './uploader.rb'
+require './drive_uploader.rb'
 
 begin
   start_time = Time.now
-  uploader = Uploader.new
+  uploader = DriveUploader.new
   uploader.upload_filesystem(upload_dest: 'root',
                              current_dir: 'elecint0/documents/')
   puts 'Failed uploads ' + uploader.failed_uploads.to_s

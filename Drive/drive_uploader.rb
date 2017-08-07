@@ -1,17 +1,16 @@
-require './authorizer.rb'
+require './drive_authorizer.rb'
 require 'rest-client'
 require 'json'
 
-# Uploads a filesystem to Google Drive
-class Uploader
-  TOKEN_LIFETIME = 3600 # time in seconds before access token is made void
+# Uploads a filesystem to Google Drive and saves ids to files
+class DriveUploader
   attr_reader :file_ids, :folder_ids, :failed_uploads
 
   def initialize
     @file_ids = {} # hash of files to ids
     @folder_ids = {} # hash of folders to ids
     @failed_uploads = []
-    @authorizer = Authorizer.new
+    @authorizer = DriveAuthorizer.new
     @access_token = @authorizer.access_token
     update_drive_manager
     update_drive_uploader
@@ -34,12 +33,12 @@ class Uploader
 
   def upload_filesystem(upload_dest: 'root', current_dir: '')
     Dir[current_dir + '*'].each do |object| # does not return hidden objects
-      if object.include?('.') # checks if object is a file
-        file_name = object.split('/')[-1]
+      if File.directory?(object) == false # checks if object is a file
+        file_name = File.basename(object)
         file_id = upload_file(object, file_name, location: upload_dest)
         @file_ids[object] = file_id
       else
-        folder_name = object.split('/')[-1]
+        folder_name = File.basename(object)
         folder_id = upload_folder(folder_name, location: upload_dest)
         @folder_ids[object] = folder_id
         upload_filesystem(upload_dest: folder_id,
@@ -80,8 +79,6 @@ class Uploader
   end
 
   def upload_file(file_path, file_name, location: 'root')
-    refresh_token if refresh?
-
     begin
       payload = File.open(file_path)
     rescue StandardError => e
@@ -89,8 +86,6 @@ class Uploader
       @failed_uploads.push(file_path)
       return
     end
-
-    refresh_token if refresh?
 
     begin
       upload = @drive_uploader.post(
@@ -103,8 +98,6 @@ class Uploader
     end
 
     file_id = JSON.parse(upload)['id']
-
-    refresh_token if refresh?
 
     begin
       @drive_manager[file_id + '?addParents=' + location +
@@ -126,11 +119,5 @@ class Uploader
     @access_token = @authorizer.access_token
     update_drive_manager
     update_drive_uploader
-  end
-
-  def refresh?
-    token_timer = Time.now - @authorizer.token_tob
-    return false unless token_timer > (TOKEN_LIFETIME - 600)
-    true
   end
 end

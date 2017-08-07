@@ -1,3 +1,9 @@
+def obtain_title
+  unprocessed_title = @doc.css('title')
+  title = unprocessed_title.to_s.split('>')[1].chomp('</title')
+  title
+end
+
 def obtain_hrefs
   temp_string = @doc.css('ul.menu.nav').css('a')
   hrefs = temp_string
