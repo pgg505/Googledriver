@@ -1,3 +1,18 @@
+def get_page_content(page_title)
+  begin
+    content = RestClient.get(
+      'https://wikidev.york.ac.uk/rest/api/content?spaceKey=' << SPACE_KEY <<
+      '&title=' << page_title << '&expand=body.view',
+      'Authorization' => @access_key
+    )
+  rescue StandardError => e
+    puts page_title
+    warn e
+  end
+
+  content
+end
+
 def obtain_title
   unprocessed_title = @doc.css('title')
   title = unprocessed_title.to_s.split('>')[1].chomp('</title')

@@ -1,5 +1,0 @@
-Make authentication more secure.
-Find out what links are on each page.
-Set code to create all necessary pages with respective content.
-Make all content links go to Google Drive instead of server.
-y.
