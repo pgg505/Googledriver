@@ -4,20 +4,20 @@ require './drive_authorizer.rb'
 
 # Uploads a filesystem to Google Drive and saves file ids
 class DriveUploader
-  def initialize(filesystem)
+  def initialize(destination, filesystem)
     @file_ids = {} # hash of files to ids
     @authorizer = DriveAuthorizer.new
     @access_token = @authorizer.access_token
     @token_lifetime = @authorizer.token_lifetime
     @token_tob = @authorizer.token_tob
-    update_drive_manager
-    update_drive_uploader
-    upload_filesystem(current_dir: filesystem)
+    create_manager_resource
+    create_uploader_resource
+    upload_filesystem(upload_dest: destination, current_dir: filesystem)
     File.open('drive_file_ids.json', 'w')
-    File.write('drive_file_ids.json', file_ids.to_json)
+    File.write('drive_file_ids.json', @file_ids.to_json)
   end
 
-  def update_drive_manager # creates REST resource for changing file metadata
+  def create_manager_resource
     @drive_manager = RestClient::Resource.new(
       'https://www.googleapis.com/drive/v3/files/',
       headers: { 'Authorization' => "Bearer #{@access_token}",
@@ -25,14 +25,14 @@ class DriveUploader
     )
   end
 
-  def update_drive_uploader # creates REST resource for uploading resources
+  def create_uploader_resource
     @drive_uploader = RestClient::Resource.new(
       'https://www.googleapis.com/upload/drive/v3/files',
       headers: { 'Authorization' => "Bearer #{@access_token}" }
     )
   end
 
-  def upload_filesystem(upload_dest: 'root', current_dir: '') # uploads server
+  def upload_filesystem(upload_dest: 'root', current_dir: '')
     Dir[current_dir + '*'].each do |object| # does not return hidden objects
       if File.directory?(object)
         folder_name = File.basename(object)
@@ -55,6 +55,7 @@ class DriveUploader
           'mimeType' => 'application/vnd.google-apps.folder' }.to_json
       )
     rescue StandardError => error
+      puts __callee__.to_s
       warn "#{error}  METHOD  #{__callee__}"
       retry
     end
@@ -69,6 +70,7 @@ class DriveUploader
                          { 'uploadType' => 'resumable' }.to_json
                        )
       rescue StandardError => error
+        puts __callee__.to_s
         warn "#{error}  METHOD  #{__callee__}"
         retry
       end
@@ -82,20 +84,21 @@ class DriveUploader
     @access_token = @authorizer.access_token
     @token_lifetime = @authorizer.token_lifetime
     @token_tob = @authorizer.token_tob
-    update_drive_manager
-    update_drive_uploader
+    create_manager_resource
+    create_uploader_resource
   end
 
   def refresh_due?
     token_timer = Time.now - @token_tob
-    return false unless token_timer > @token_lifetime * 0.9
+    return false unless token_timer > @token_lifetime * 0.9 # gives a threshold
     true
   end
 
-  def upload_file(file_path, file_name, location: 'root')
+  def upload_file(file_path, file_name, location: 'root') # uploads a file
     begin
       payload = File.open(file_path)
     rescue StandardError => error
+      puts __callee__.to_s
       warn "#{error}  METHOD  #{__callee__}"
       return
     end
@@ -106,8 +109,9 @@ class DriveUploader
         payload
       )
     rescue StandardError => error
+      puts __callee__.to_s
       warn "#{error}  METHOD  #{__callee__}"
-      retry
+      return
     end
 
     file_id = JSON.parse(upload)['id']
@@ -120,6 +124,7 @@ class DriveUploader
                          'name' => file_name }.to_json
                      )
     rescue StandardError => error
+      puts __callee__.to_s
       warn "#{error}  METHOD  #{__callee__}"
       retry
     end
