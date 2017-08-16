@@ -1,45 +1,55 @@
+require 'uri'
 require 'json'
-require 'nokogiri'
 require 'open-uri'
+require 'nokogiri'
 
 # Scrapes a Drupal website
 class WebScraper
   NEW_LINE = '<p></p>'.freeze # used to emulate line breaks
-  attr_reader :page_contents, :drive_links
+  DRIVE_BASE_LINK = 'https://drive.google.com/open?id='.freeze
+  FILE_IDS_PATH = 'drive_file_ids.json'.freeze
+  CLIENT_CREDENTIALS_PATH = 'client_credentials.json'.freeze
+  attr_reader :page_contents, :page_titles, :password, :username
 
-  def initialize(initial_uri, username, password)
-    build_file_ids
-    @base_uri = initial_uri
-    @user = username
-    @key = password
-    update_doc
+  def initialize
     @internal_links = []
-    @drive_links = []
     @page_contents = {} # hash of pages to markup code
+    @page_titles = {} # hash of pages to more informative titles
+    update_client_data
+    create_file_ids
+    create_page_doc
     scrape_website
   end
 
-  def build_file_ids
-    file_content = File.read('drive_file_ids.json')
-    puts @drive_file_ids = JSON.parse(file_content)
+  def update_client_data
+    file_content = File.read(CLIENT_CREDENTIALS_PATH)
+    client_data = JSON.parse(file_content)
+    @username = client_data['username']
+    @password = client_data['password']
+    @base_uri = client_data['base_uri']
   end
 
-  def update_doc(page: '')
+  def create_file_ids
+    file_content = File.read(FILE_IDS_PATH)
+    @drive_file_ids = JSON.parse(file_content)
+  end
+
+  def create_page_doc(page: '')
     new_page = open(@base_uri + page,
-                    http_basic_authentication: [@user, @key])
+                    http_basic_authentication: [@username, @password])
     @doc = Nokogiri::HTML(new_page)
   end
 
   def scrape_website
-    add_internal_links # gets internal links on homepage
-    build_internal_links # gets all other internal links
-    build_page_contents
+    push_internal_links # gets internal links from homepage
+    bulid_internal_links # gets all other internal inks on website
+    obtain_page_data
   end
 
-  def add_internal_links
+  def push_internal_links
     body = @doc.css('div.field-item.even').to_s
     unprocessed_hrefs = body.split('href="')
-    unprocessed_hrefs.shift
+    unprocessed_hrefs.shift # drops first element
 
     unprocessed_hrefs.each do |href|
       evaluate_href(href.split('"')[0])
@@ -49,14 +59,14 @@ class WebScraper
   end
 
   def evaluate_href(href)
+    return if document_link?(href)
     return if external_link?(href)
-
-    if document_link?(href)
-      @drive_links.push(href)
-      return
-    end
-
     @internal_links.push(href) unless href.include?('#')
+  end
+
+  def document_link?(href)
+    return true if href.include?('documents/') # works in this domain
+    false
   end
 
   def external_link?(href)
@@ -69,50 +79,69 @@ class WebScraper
     false
   end
 
-  def document_link?(href)
-    return true if href.include?('documents/')
-    false
-  end
-
-  def build_internal_links
+  def bulid_internal_links
     @internal_links.each do |page|
       begin
-        update_doc(page: page)
-        add_internal_links
-      rescue StandardError => e
-        warn e.to_s + '   PAGE   ' + page
+        create_page_doc(page: page)
+        push_internal_links
+      rescue StandardError => error
+        warn "#{error};  METHOD  #{__callee__};  RESOURCE  #{page}"
+        next
       end
     end
   end
 
-  def build_page_contents
+  def obtain_page_data
     @internal_links.each do |page|
       begin
-        update_doc(page: page)
-        page_contents[page] = evaluate_page
-      rescue StandardError => e # using error handling for flow control here
-        warn e.to_s + '   PAGE   ' + page
+        create_page_doc(page: page)
+        @page_contents[page] = evaluate_page
+        @page_titles[page] = establish_title.gsub('&amp;', '&')
+      rescue StandardError => error
+        warn "#{error};  METHOD  #{__callee__};  RESOURCE  #{page}"
+        next
       end
     end
   end
 
-  def evaluate_page # cannot evaluate an uncreated page so gets error here
-    fix_drive_links
-    unprocessed_body = @doc.css('div.field-item.even')
-    unprocessed_body.search('img', 'div.alert.alert-info',
-                            'a.btn.btn-primary.btn-xs', 'br', 'hr').remove
-    unprocessed_body = unprocessed_body.to_s.gsub('</a> ', "</a> #{NEW_LINE}")
-    body = unprocessed_body.gsub('</h1>', '</h1>' + NEW_LINE)
+  def evaluate_page
+    body = @doc.css('div.field-item.even')
+    body.search('img', 'div.alert.alert-info', 'a.btn.btn-primary.btn-xs', 'br',
+                'hr').remove
+    body = body.to_s
+    unprocessed_hrefs = body.split('href="')
+    unprocessed_hrefs.shift # drops first element
+    drive_links = []
+
+    unprocessed_hrefs.each do |href|
+      drive_links.push(href.split('"')[0]) if document_link?(href.split('"')[0])
+    end
+
+    body = swap_links(drive_links, body)
+    # body = Nokogiri::HTML(body)
+    # body.search('h1').remove
+    body = body.to_s
     body
   end
 
-  def fix_drive_links
-    @drive_links = @drive_links.uniq
-
-    @drive_links.each do |drive_link|
-      fixed_link = @drive_file_ids[drive_link]
-      @doc = @doc.gsub(drive_link, fixed_link) unless fixed_link.nil?
-      puts "#{drive_link} -> #{fixed_link}" unless fixed_link.nil?
+  def swap_links(drive_links, body)
+    drive_links.each do |link|
+      decoded_link = URI.decode(link)
+      file_id = @drive_file_ids["elecint0#{decoded_link}"]
+      next if file_id.nil?
+      fixed_link = "#{DRIVE_BASE_LINK}#{file_id}"
+      body = body.gsub(link, fixed_link)
     end
+
+    body = body.gsub('</a>', "</a>#{NEW_LINE}")
+    body
+  end
+
+  def establish_title
+    titles = @doc.css('h1')
+    first = titles[0].to_s
+    return first.split('>')[1].split('<')[0] unless first.include?'<h1> </h1>'
+    second = titles[1].to_s.split('>')[1].split('<')[0]
+    second
   end
 end

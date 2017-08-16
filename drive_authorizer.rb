@@ -10,13 +10,13 @@ class DriveAuthorizer
   attr_reader :access_token, :token_lifetime, :token_tob
 
   def initialize
-    create_client_data
+    update_client_data
     create_refresh_token
     create_refresh_resource
     refresh_access_token
   end
 
-  def create_client_data
+  def update_client_data
     file_content = File.read(CLIENT_SECRETS_PATH)
     client_data = JSON.parse(file_content)['installed']
     @client_id = client_data['client_id']
@@ -48,18 +48,17 @@ class DriveAuthorizer
 
     begin
       refresh = @refresh_manager.post(
-        create_refresh_payload
+        build_refresh_payload
       )
     rescue StandardError => error
-      puts __callee__.to_s
-      warn "#{error}  METHOD  #{__callee__}"
+      warn "#{error};  METHOD  #{__callee__};  RESOURCE  #{@refresh_manager}"
       retry
     end
 
     update_refresh_data(refresh)
   end
 
-  def create_refresh_payload
+  def build_refresh_payload
     payload = { 'refresh_token' => @refresh_token, 'client_id' => @client_id,
                 'client_secret' => @client_secret,
                 'grant_type' => 'refresh_token' }
@@ -71,4 +70,7 @@ class DriveAuthorizer
     @token_lifetime = processed_data['expires_in']
     @access_token = processed_data['access_token']
   end
+
+  private :update_client_data, :create_refresh_token, :create_refresh_resource,
+          :build_refresh_payload, :update_refresh_data
 end

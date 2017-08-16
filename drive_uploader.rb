@@ -49,14 +49,13 @@ class DriveUploader
 
   def upload_folder(folder_name, location: 'root')
     begin
-      refresh_token if refresh_due?
+      update_refresh_token if refresh_due?
       upload = @drive_manager.post(
         { 'name' => folder_name,
           'mimeType' => 'application/vnd.google-apps.folder' }.to_json
       )
     rescue StandardError => error
-      puts __callee__.to_s
-      warn "#{error}  METHOD  #{__callee__}"
+      warn "#{error};  METHOD  #{__callee__};  RESOURCE  #{folder_name}"
       retry
     end
 
@@ -64,14 +63,13 @@ class DriveUploader
 
     if location != 'root' # does not change parents if intended location is root
       begin
-        refresh_token if refresh_due?
+        update_refresh_token if refresh_due?
         @drive_manager[folder_id + '?addParents=' + location +
                        '&removeParents=root&alt=json'].patch(
                          { 'uploadType' => 'resumable' }.to_json
                        )
       rescue StandardError => error
-        puts __callee__.to_s
-        warn "#{error}  METHOD  #{__callee__}"
+        warn "#{error};  METHOD  #{__callee__};  RESOURCE  #{folder_name}"
         retry
       end
     end
@@ -79,7 +77,7 @@ class DriveUploader
     folder_id
   end
 
-  def refresh_token
+  def update_refresh_token
     @authorizer.refresh_access_token
     @access_token = @authorizer.access_token
     @token_lifetime = @authorizer.token_lifetime
@@ -98,37 +96,39 @@ class DriveUploader
     begin
       payload = File.open(file_path)
     rescue StandardError => error
-      puts __callee__.to_s
-      warn "#{error}  METHOD  #{__callee__}"
+      warn "#{error};  METHOD  #{__callee__};  RESOURCE  #{file_path}"
       return
     end
 
     begin
-      refresh_token if refresh_due?
+      update_refresh_token if refresh_due?
       upload = @drive_uploader.post(
         payload
       )
     rescue StandardError => error
-      puts __callee__.to_s
-      warn "#{error}  METHOD  #{__callee__}"
-      return
+      warn "#{error};  METHOD  #{__callee__};  RESOURCE  #{file_path}"
+      retry
     end
 
     file_id = JSON.parse(upload)['id']
 
     begin
-      refresh_token if refresh_due?
+      update_refresh_token if refresh_due?
       @drive_manager[file_id + '?addParents=' + location +
                      '&removeParents=root&alt=json'].patch(
                        { 'uploadType' => 'resumable',
                          'name' => file_name }.to_json
                      )
     rescue StandardError => error
-      puts __callee__.to_s
-      warn "#{error}  METHOD  #{__callee__}"
+      warn "#{error};  METHOD  #{__callee__};  RESOURCE  #{file_path}"
       retry
     end
 
+    payload.close
     file_id
   end
+
+  private :create_manager_resource, :create_uploader_resource,
+          :upload_filesystem, :upload_folder, :update_refresh_token,
+          :refresh_due?, :upload_file
 end
