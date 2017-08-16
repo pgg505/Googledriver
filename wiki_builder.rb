@@ -11,14 +11,10 @@ class WikiBuilder
     @space_name = space_name
     @space_key = space_key
     @scraper = WebScraper.new
-    @page_contents = @scraper.page_contents
-    @page_titles = @scraper.page_titles
     create_access_key
     create_manager_resource
     create_uploader_resource
-    upload_space
-    upload_blanks
-    upload_website
+    build_wiki
   end
 
   def create_access_key
@@ -44,6 +40,12 @@ class WikiBuilder
     )
   end
 
+  def build_wiki
+    upload_space
+    upload_blanks
+    upload_website
+  end
+
   def upload_space
     payload = { 'name' => @space_name, 'key' => @space_key, 'metadata' => nil }
 
@@ -58,6 +60,9 @@ class WikiBuilder
   end
 
   def upload_blanks
+    @page_contents = @scraper.page_contents
+    @page_titles = @scraper.page_titles
+
     @page_contents.each do |page|
       payload = { 'type' => 'page', 'title' => page[0],
                   'space' => { 'key' => @space_key },
@@ -88,12 +93,16 @@ class WikiBuilder
     @page_contents.each do |page| # gsub content for tiny links
       body_value = page[1]
 
-      @page_links.each do |link|
+      @page_links.each do |link| # swaps out internal links for tiny links
         body_value = body_value.gsub("f=\"#{link[0]}\"", "f=\"#{link[1]}\"")
       end
 
+      title = @page_titles[page[0]]
+      body_value = body_value.gsub("<h1>#{title}</h1>", '')
+      body_value = body_value.gsub("<h1 id=\"top\">#{title}</h1>", '')
+
       payload = { 'version' => { 'number' => 2 }, 'type' => 'page',
-                  'title' => @page_titles[page[0]],
+                  'title' => title,
                   'body' => { 'storage' => { 'value' => body_value,
                                              'representation' => 'storage' } } }
       upload_page(payload, @page_ids[page[0]])

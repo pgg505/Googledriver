@@ -118,9 +118,6 @@ class WebScraper
     end
 
     body = swap_links(drive_links, body)
-    # body = Nokogiri::HTML(body)
-    # body.search('h1').remove
-    body = body.to_s
     body
   end
 
