@@ -1,4 +1,5 @@
 module Googledriver
+
   # Authorizes a user to Google Drive and generates access tokens.
   class Authorizer
     # Authorization scope which only allows program to manipulate files it

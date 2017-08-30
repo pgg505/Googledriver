@@ -12,7 +12,7 @@ Install the gem using the following Bash command command:
 ```bash
 sudo gem install googledriver
 ```
-Then add to your Ruby programs when needed:
+Then add to your Ruby programs as needed:
 ```ruby
 require 'googledriver'
 ```
