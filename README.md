@@ -1,7 +1,7 @@
 # Googledriver 0.0.2
 Authorize a Google account and upload files to its Drive.
 ## Requirements
-Before use, a secrets file must be downloaded by following the wizard [here](console.developers.google.com/start/api?id=drive).
+Before use, a secrets file must be downloaded by following the wizard [here](https://console.developers.google.com/start/api?id=drive).
 Googledriver was developed using Ruby 2.3.1 and is untested on other versions.
 This gem has the following runtime dependencies which can be managed using
 bundler:
