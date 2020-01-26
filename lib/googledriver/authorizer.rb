@@ -51,8 +51,8 @@ module Googledriver
         refresh = @refresh_manager.post(
           build_refresh_payload
         )
-      rescue StandardError => error
-        warn "#{error};  METHOD  #{__callee__};  RESOURCE  #{@refresh_manager}"
+      rescue StandardError => e
+        warn "#{e};  METHOD  #{__callee__};  RESOURCE  #{@refresh_manager}"
         retry
       end
 
