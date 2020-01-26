@@ -9,7 +9,7 @@ bundler:
 * [oauth2](https://rubygems.org/gems/oauth2) (developed using 1.4.0)
 * [rest-client](https://rubygems.org/gems/rest-client) (developed using 2.0.2)
 
-Install the gem using the following Bash command command:
+Install the gem using the following Bash command:
 ```bash
 sudo gem install googledriver
 ```
