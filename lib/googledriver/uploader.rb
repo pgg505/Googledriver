@@ -44,8 +44,8 @@ module Googledriver
           { 'name' => folder_name,
             'mimeType' => 'application/vnd.google-apps.folder' }.to_json
         )
-      rescue StandardError => error
-        warn "#{error};  METHOD  #{__callee__};  RESOURCE  #{folder_name}"
+      rescue StandardError => e
+        warn "#{e};  METHOD  #{__callee__};  RESOURCE  #{folder_name}"
         retry
       end
 
@@ -58,8 +58,8 @@ module Googledriver
                          '&removeParents=root&alt=json'].patch(
                            { 'uploadType' => 'resumable' }.to_json
                          )
-        rescue StandardError => error
-          warn "#{error};  METHOD  #{__callee__};  RESOURCE  #{folder_name}"
+        rescue StandardError => e
+          warn "#{e};  METHOD  #{__callee__};  RESOURCE  #{folder_name}"
           retry
         end
       end
@@ -72,8 +72,8 @@ module Googledriver
     def upload_file(file_path, file_name, location: 'root')
       begin
         payload = File.open(file_path)
-      rescue StandardError => error
-        warn "#{error};  METHOD  #{__callee__};  RESOURCE  #{file_path}"
+      rescue StandardError => e
+        warn "#{e};  METHOD  #{__callee__};  RESOURCE  #{file_path}"
         return
       end
 
@@ -82,8 +82,8 @@ module Googledriver
         upload = @drive_uploader.post(
           payload
         )
-      rescue StandardError => error
-        warn "#{error};  METHOD  #{__callee__};  RESOURCE  #{file_path}"
+      rescue StandardError => e
+        warn "#{e};  METHOD  #{__callee__};  RESOURCE  #{file_path}"
         retry
       end
 
@@ -97,8 +97,8 @@ module Googledriver
                          { 'uploadType' => 'resumable',
                            'name' => file_name }.to_json
                        )
-      rescue StandardError => error
-        warn "#{error};  METHOD  #{__callee__};  RESOURCE  #{file_path}"
+      rescue StandardError => e
+        warn "#{e};  METHOD  #{__callee__};  RESOURCE  #{file_path}"
         retry
       end
 
@@ -117,8 +117,8 @@ module Googledriver
     def obtain_file_metadata(file_id)
       begin
         metadata = @drive_manager[file_id].get
-      rescue StandardError => error
-        warn "#{error};  METHOD  #{__callee__};  RESOURCE  #{file_path}"
+      rescue StandardError => e
+        warn "#{e};  METHOD  #{__callee__};  RESOURCE  #{file_path}"
         return
       end
 
@@ -134,8 +134,8 @@ module Googledriver
         update = @drive_manager[file_id].patch(
           payload
         )
-      rescue StandardError => error
-        warn "#{error};  METHOD  #{__callee__};  RESOURCE  #{file_path}"
+      rescue StandardError => e
+        warn "#{e};  METHOD  #{__callee__};  RESOURCE  #{file_path}"
         return
       end
 
@@ -151,8 +151,8 @@ module Googledriver
         update = @drive_manager[file_id + '/permissions'].post(
           payload
         )
-      rescue StandardError => error
-        warn "#{error};  METHOD  #{__callee__};  RESOURCE  #{file_path}"
+      rescue StandardError => e
+        warn "#{e};  METHOD  #{__callee__};  RESOURCE  #{file_path}"
         return
       end
 
