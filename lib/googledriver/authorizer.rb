@@ -62,11 +62,19 @@ module Googledriver
     private
 
     def update_client_data
-      file_content = File.read(@client_secrets_path)
+      begin
+        file_content = File.read(@client_secrets_path)
+      rescue Errno::ENOENT
+	puts 'Cannot locate file.'
+        exit 66
+      end
+
       client_data = JSON.parse(file_content)['installed']
       @client_id = client_data['client_id']
       @client_secret = client_data['client_secret']
     end
+
+
 
     def create_refresh_resource
       @refresh_manager = RestClient::Resource.new(
